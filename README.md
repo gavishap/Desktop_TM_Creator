@@ -83,11 +83,14 @@ so nothing is lost.
    retry a row, **✕** to delete it, **Reset failed** to put every failed row back in the
    queue at once, and **Export CSV** for the whole list as a spreadsheet.
 
-**If Ticketmaster blocks a row**, the app wipes the browser session (fresh cookies), waits,
-and retries — four attempts in all, with the wait growing hard each time: **5 minutes, then
-20 minutes, then 1 hour 10 minutes.** Coming straight back after a block is what turns a
-soft block into a sticky one, so the long waits are the point. After the last attempt the
-row is marked failed and you can reset it whenever you like.
+**If Ticketmaster blocks a row**, the browser closes (so its cookies are gone) and the row
+goes back in the queue with a countdown, each wait longer than the last: **5 minutes, 20
+minutes, 1 hour 10 minutes, 2 hours 30 minutes, 5 hours.** Coming straight back after a
+block is what turns a soft block into a sticky one, so the long waits are the point.
+**Retries after a fail** in Settings decides how many of those waits a row gets (5 by
+default = all of them; 2 would stop after the 20-minute one). Waiting rows don't hold up
+anything — the next account starts straight away and they come back by themselves as long as
+the app is open. After the last try the row is marked failed and you can reset it any time.
 
 **If Ticketmaster throttles the connection** (the "Almost there" page that never clears),
 that's your internet address being rate-limited, not the browser — so the row is parked
@@ -279,9 +282,11 @@ build.spec, build.bat   PyInstaller packaging
 - **Concurrent Chrome windows** — how many accounts run at once (default 1).
 - **Launch jitter** — random delay before each account starts (desyncs a shared IP).
 - **Headless** — hide Chrome (not recommended; you can't help with challenges).
-- **Retries per account on block** — how many cookie-wipe + cooldown retries before failing
-  (3, waiting 5m, 20m, 1h10m). The wait ladder lives in the code rather than in the saved
-  settings, so a new build changes it on every machine instead of only new installs.
+- **Retries after a fail** — how many retries a row gets before it's marked failed, and so
+  how far down the wait ladder it travels (5 by default: 5m, 20m, 1h10m, 2h30m, 5h). The
+  waits themselves live in the code rather than in the saved settings, so a new build changes
+  them on every machine instead of only on fresh installs; the box spells out which ones
+  apply as you change the number.
 - **Jivetel** — portal login used to read SMS codes by phone number.
 - **Google Sheet** — which office sheet finished work is copied into, when it last synced,
   plus **Sync now** and **Test connection**.

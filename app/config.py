@@ -78,9 +78,12 @@ class ICloudConfig:
 class BlockConfig:
     # On a TM bot-block we wipe cookies and wait before retrying, escalating hard each time:
     # a block means this connection just looked like a bot, and coming straight back is what
-    # turns a soft block into a sticky one. Three retries, so every step below is reached.
-    max_retries: int = 3
-    cooldowns: list = field(default_factory=lambda: [300, 1200, 4200])  # 5m, 20m, 1h10m
+    # turns a soft block into a sticky one. ``max_retries`` is the Settings number ("retries
+    # after a fail") and picks how far down the ladder a row is allowed to travel, so 5 uses
+    # every wait below and 2 stops after the 20-minute one.
+    max_retries: int = 5
+    # 5m, 20m, 1h10m, 2h30m, 5h
+    cooldowns: list = field(default_factory=lambda: [300, 1200, 4200, 9000, 18000])
     manual_code_timeout: int = 300  # how long a UI code prompt stays open
     # A throttle ("Almost there" that never clears) is TM rate-limiting the IP, not a
     # fingerprint problem, so it gets its own much longer schedule: the row is put back in
@@ -103,10 +106,13 @@ class SheetsConfig:
 
 
 _BLOCK_LADDERS = ("cooldowns", "throttle_backoffs", "throttle_pauses")
+# Bumped whenever a new default has to reach machines that already saved a config file.
+SETTINGS_VERSION = 2
 
 
 @dataclass
 class AppConfig:
+    settings_version: int = SETTINGS_VERSION
     max_concurrent: int = 1  # one visible Chrome at a time by default
     # Base Gmail addresses the operator owns; the dot-generator mints unused single-dot
     # variants of these (bases are also auto-discovered from existing accounts).
@@ -135,11 +141,14 @@ class AppConfig:
         raw = json.loads(CONFIG_PATH.read_text(encoding="utf-8"))
         # The wait ladders aren't editable in the app, so they always come from the build —
         # otherwise a machine set up on an older copy would keep waiting the old, shorter
-        # times forever. The same goes for a retry count saved back when the ladder was
-        # shorter: lift it so the last step is actually reached.
+        # times forever.
         block = BlockConfig(**_subset(raw.get("block", {}), BlockConfig, drop=_BLOCK_LADDERS))
-        block.max_retries = max(block.max_retries, len(block.cooldowns))
-        return cls(
+        # A retry count saved before the ladder grew would stop halfway down it. Lift it once,
+        # then leave it alone so a deliberately lower number keeps sticking.
+        stale = raw.get("settings_version", 1) < SETTINGS_VERSION
+        if stale:
+            block.max_retries = BlockConfig().max_retries
+        cfg = cls(
             max_concurrent=raw.get("max_concurrent", 1),
             gmail_bases=raw.get("gmail_bases", []),
             launch_jitter=raw.get("launch_jitter", 8.0),
@@ -151,6 +160,9 @@ class AppConfig:
             sheets=SheetsConfig(**_subset(raw.get("sheets", {}), SheetsConfig)),
             block=block,
         )
+        if stale:
+            cfg.save()
+        return cfg
 
     def save(self) -> None:
         CONFIG_PATH.write_text(json.dumps(asdict(self), indent=2), encoding="utf-8")

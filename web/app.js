@@ -260,6 +260,8 @@ $("btnSettings").onclick = async () => {
   $("setJitter").value = cfg.launch_jitter;
   $("setHeadless").checked = cfg.browser.headless;
   $("setRetries").value = cfg.block.max_retries;
+  waitLadder = cfg.block.cooldowns || [];
+  showRetriesHint();
   $("setJvUser").value = cfg.jivetel.username || "";
   $("setJvPass").value = cfg.jivetel.password || "";
   await renderCredFiles();
@@ -267,6 +269,19 @@ $("btnSettings").onclick = async () => {
   await renderSheet();
   $("settingsOverlay").classList.remove("hidden");
 };
+
+// The waits themselves aren't editable; the number of retries decides how far down them a
+// row travels, so spell the chosen ones out rather than leaving the operator guessing.
+let waitLadder = [];
+function showRetriesHint() {
+  const n = parseInt($("setRetries").value, 10) || 0;
+  const spell = (s) => s < 3600 ? `${Math.round(s / 60)}m`
+    : (s % 3600 ? `${Math.floor(s / 3600)}h ${Math.round((s % 3600) / 60)}m` : `${s / 3600}h`);
+  $("setRetriesHint").textContent = !n || !waitLadder.length ? "One try only, no waiting."
+    : "Waits " + Array.from({ length: n }, (_, i) =>
+        spell(waitLadder[Math.min(i, waitLadder.length - 1)])).join(", then ") + ".";
+}
+$("setRetries").oninput = showRetriesHint;
 
 async function renderSheet() {
   const s = await api("sheet_status");
@@ -423,7 +438,8 @@ function renderAccounts(accounts, now) {
   body.innerHTML = accounts.map((a, i) => {
     const place = [a.city, a.state].filter(Boolean).join(" ");
     const addr = [a.address, place].filter(Boolean).join(", ");
-    const waiting = a.retry_after > now ? Math.ceil((a.retry_after - now) / 60) : 0;
+    const wait = a.retry_after > now ? Math.ceil((a.retry_after - now) / 60) : 0;
+    const waiting = wait > 90 ? `${Math.floor(wait / 60)}h ${wait % 60}m` : wait ? `${wait}m` : "";
     return `
     <tr class="${selected.has(a.id) ? "sel" : ""}">
       <td class="c"><input type="checkbox" class="rowsel" ${selected.has(a.id) ? "checked" : ""} onclick="toggleSel(${a.id}, this.checked)" /></td>
@@ -439,7 +455,7 @@ function renderAccounts(accounts, now) {
         ? `<span class="cellcopy"><code>${esc(a.tm_password)}</code><button class="icon-btn copy" title="Copy password" onclick="copyCell(this)">⧉</button></span>`
         : '<span class="cross">·</span>'}</td>
       <td><span class="badge ${a.status}">${a.status.replace(/_/g, " ")}</span>${
-        waiting ? `<span class="wait" title="Ticketmaster throttled this connection; it retries by itself">⏳ ${waiting}m</span>` : ""}</td>
+        waiting ? `<span class="wait" title="Waiting before its next try — it comes back by itself, leave the app open">⏳ ${waiting}</span>` : ""}</td>
       <td class="c">${a.email_verified ? '<span class="tick">✓</span>' : '<span class="cross">·</span>'}</td>
       <td class="c">${a.phone_verified ? '<span class="tick">✓</span>' : '<span class="cross">·</span>'}</td>
       <td class="date">${esc(shortDate(a.verified_at || a.created_at))}</td>

@@ -46,6 +46,7 @@ CREATE TABLE IF NOT EXISTS accounts (
     phone_verified INTEGER NOT NULL DEFAULT 0,
     error          TEXT NOT NULL DEFAULT '',
     attempts       INTEGER NOT NULL DEFAULT 0,
+    block_strikes  INTEGER NOT NULL DEFAULT 0,
     throttle_strikes INTEGER NOT NULL DEFAULT 0,
     retry_after    REAL NOT NULL DEFAULT 0,
     created_at     REAL NOT NULL DEFAULT 0,
@@ -80,6 +81,7 @@ _MIGRATIONS = {
         "city": "TEXT NOT NULL DEFAULT ''",
         "state": "TEXT NOT NULL DEFAULT ''",
         "created_from": "TEXT NOT NULL DEFAULT ''",
+        "block_strikes": "INTEGER NOT NULL DEFAULT 0",
         "throttle_strikes": "INTEGER NOT NULL DEFAULT 0",
         "retry_after": "REAL NOT NULL DEFAULT 0",
         "verified_at": "REAL NOT NULL DEFAULT 0",
@@ -109,6 +111,7 @@ class Account:
     phone_verified: bool = False
     error: str = ""
     attempts: int = 0
+    block_strikes: int = 0      # how far down the block-cooldown ladder this row has gone
     throttle_strikes: int = 0
     retry_after: float = 0.0
     id: int = 0
@@ -126,7 +129,8 @@ class Account:
             "status": self.status, "email_verified": self.email_verified,
             "phone_verified": self.phone_verified, "error": self.error,
             "attempts": self.attempts, "has_imap": bool(self.imap_password),
-            "retry_after": self.retry_after, "throttle_strikes": self.throttle_strikes,
+            "retry_after": self.retry_after, "block_strikes": self.block_strikes,
+            "throttle_strikes": self.throttle_strikes,
             "created_at": self.created_at, "verified_at": self.verified_at,
         }
 
@@ -173,12 +177,12 @@ class Store:
                 "UPDATE accounts SET email=?, phone=?, imap_password=?, first_name=?, "
                 "last_name=?, address=?, city=?, state=?, zip_code=?, tm_password=?, "
                 "created_from=?, status=?, email_verified=?, phone_verified=?, error=?, "
-                "attempts=?, throttle_strikes=?, retry_after=?, updated_at=?, created_at=?, "
-                "verified_at=? WHERE id=?",
+                "attempts=?, block_strikes=?, throttle_strikes=?, retry_after=?, updated_at=?, "
+                "created_at=?, verified_at=? WHERE id=?",
                 (a.email, a.phone, a.imap_password, a.first_name, a.last_name, a.address,
                  a.city, a.state, a.zip_code, a.tm_password, a.created_from, a.status,
                  int(a.email_verified), int(a.phone_verified), a.error, a.attempts,
-                 a.throttle_strikes, a.retry_after, a.updated_at, a.created_at,
+                 a.block_strikes, a.throttle_strikes, a.retry_after, a.updated_at, a.created_at,
                  a.verified_at, a.id),
             )
             self._conn.commit()
@@ -188,7 +192,7 @@ class Store:
         with self._lock:
             self._conn.execute(
                 "UPDATE accounts SET status=?, error='', email_verified=0, phone_verified=0, "
-                "throttle_strikes=0, retry_after=0, updated_at=? WHERE id=?",
+                "block_strikes=0, throttle_strikes=0, retry_after=0, updated_at=? WHERE id=?",
                 (PENDING, time.time(), account_id),
             )
             self._conn.commit()
@@ -201,7 +205,8 @@ class Store:
         with self._lock:
             cur = self._conn.execute(
                 f"UPDATE accounts SET status=?, error='', email_verified=0, phone_verified=0, "
-                f"throttle_strikes=0, retry_after=0, updated_at=? WHERE status IN ({marks})",
+                f"block_strikes=0, throttle_strikes=0, retry_after=0, updated_at=? "
+                f"WHERE status IN ({marks})",
                 (PENDING, time.time(), *statuses),
             )
             self._conn.commit()
@@ -231,7 +236,7 @@ class Store:
             city=r["city"], state=r["state"], zip_code=r["zip_code"],
             tm_password=r["tm_password"], created_from=r["created_from"], status=r["status"],
             email_verified=bool(r["email_verified"]), phone_verified=bool(r["phone_verified"]),
-            error=r["error"], attempts=r["attempts"],
+            error=r["error"], attempts=r["attempts"], block_strikes=r["block_strikes"],
             throttle_strikes=r["throttle_strikes"], retry_after=r["retry_after"],
             created_at=r["created_at"], updated_at=r["updated_at"],
             verified_at=r["verified_at"],
