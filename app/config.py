@@ -76,9 +76,11 @@ class ICloudConfig:
 
 @dataclass
 class BlockConfig:
-    # On a TM bot-block we wipe cookies and wait before retrying, escalating each time.
-    max_retries: int = 2
-    cooldowns: list = field(default_factory=lambda: [120, 300, 900])  # 2m, 5m, 15m
+    # On a TM bot-block we wipe cookies and wait before retrying, escalating hard each time:
+    # a block means this connection just looked like a bot, and coming straight back is what
+    # turns a soft block into a sticky one. Three retries, so every step below is reached.
+    max_retries: int = 3
+    cooldowns: list = field(default_factory=lambda: [300, 1200, 4200])  # 5m, 20m, 1h10m
     manual_code_timeout: int = 300  # how long a UI code prompt stays open
     # A throttle ("Almost there" that never clears) is TM rate-limiting the IP, not a
     # fingerprint problem, so it gets its own much longer schedule: the row is put back in
@@ -98,6 +100,9 @@ class SheetsConfig:
     enabled: bool = True
     credentials_file: str = ""   # service_account.json shipped in the project folder
     spreadsheet_id: str = ""     # per office, read from the team's settings file
+
+
+_BLOCK_LADDERS = ("cooldowns", "throttle_backoffs", "throttle_pauses")
 
 
 @dataclass
@@ -128,6 +133,12 @@ class AppConfig:
             cfg.save()
             return cfg
         raw = json.loads(CONFIG_PATH.read_text(encoding="utf-8"))
+        # The wait ladders aren't editable in the app, so they always come from the build —
+        # otherwise a machine set up on an older copy would keep waiting the old, shorter
+        # times forever. The same goes for a retry count saved back when the ladder was
+        # shorter: lift it so the last step is actually reached.
+        block = BlockConfig(**_subset(raw.get("block", {}), BlockConfig, drop=_BLOCK_LADDERS))
+        block.max_retries = max(block.max_retries, len(block.cooldowns))
         return cls(
             max_concurrent=raw.get("max_concurrent", 1),
             gmail_bases=raw.get("gmail_bases", []),
@@ -138,14 +149,14 @@ class AppConfig:
             jivetel=JivetelConfig(**_subset(raw.get("jivetel", {}), JivetelConfig)),
             icloud=ICloudConfig(**_subset(raw.get("icloud", {}), ICloudConfig)),
             sheets=SheetsConfig(**_subset(raw.get("sheets", {}), SheetsConfig)),
-            block=BlockConfig(**_subset(raw.get("block", {}), BlockConfig)),
+            block=block,
         )
 
     def save(self) -> None:
         CONFIG_PATH.write_text(json.dumps(asdict(self), indent=2), encoding="utf-8")
 
 
-def _subset(raw: dict, dc) -> dict:
+def _subset(raw: dict, dc, drop: tuple = ()) -> dict:
     """Keep only keys that are real fields of the dataclass (tolerates old configs)."""
-    valid = {f.name for f in fields(dc)}
+    valid = {f.name for f in fields(dc)} - set(drop)
     return {k: v for k, v in raw.items() if k in valid}

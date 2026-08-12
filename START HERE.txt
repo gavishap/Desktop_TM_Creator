@@ -63,7 +63,10 @@ Click "Activity" for the full log.
 IF SOMETHING GETS BLOCKED
 -------------------------
 You don't have to do anything. The app handles it:
-  - Blocked      clears the browser and tries again, up to 3 tries.
+  - Blocked      clears all cookies and tries again, 4 tries in total, waiting
+                 5 minutes, then 20 minutes, then 1 hour 10 minutes in between.
+                 The long waits are deliberate: going straight back after a
+                 block is what makes Ticketmaster block you for good.
   - "Waiting"    Ticketmaster is limiting your internet connection. The row
                  shows a countdown and comes back on its own (30 min, then 1
                  hour, then 2). If several in a row get hit, everything pauses

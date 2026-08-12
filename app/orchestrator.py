@@ -293,8 +293,10 @@ class Runner:
                 cooldown = cooldowns[min(attempt, len(cooldowns) - 1)]
                 account.status = NEEDS_RETRY
                 self.store.save_account(account)
-                reason = "cookies wiped, cooling down" if hard_block else "retrying"
-                log(f"{reason} for {cooldown // 60}m {cooldown % 60}s before retry", "warn")
+                reason = "Cookies wiped" if hard_block else "Retrying"
+                mins = cooldown // 60
+                spell = f"{mins // 60}h {mins % 60:02d}m" if mins >= 60 else f"{mins}m"
+                log(f"{reason} — waiting {spell} before attempt {attempt + 2}", "warn")
                 try:
                     await asyncio.sleep(cooldown)
                 except asyncio.CancelledError:

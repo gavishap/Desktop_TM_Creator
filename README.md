@@ -83,8 +83,11 @@ so nothing is lost.
    retry a row, **✕** to delete it, **Reset failed** to put every failed row back in the
    queue at once, and **Export CSV** for the whole list as a spreadsheet.
 
-**If Ticketmaster blocks a row**, the app wipes the browser session (fresh cookies), waits
-a cooldown, and retries. After the configured number of retries it marks the row failed.
+**If Ticketmaster blocks a row**, the app wipes the browser session (fresh cookies), waits,
+and retries — four attempts in all, with the wait growing hard each time: **5 minutes, then
+20 minutes, then 1 hour 10 minutes.** Coming straight back after a block is what turns a
+soft block into a sticky one, so the long waits are the point. After the last attempt the
+row is marked failed and you can reset it whenever you like.
 
 **If Ticketmaster throttles the connection** (the "Almost there" page that never clears),
 that's your internet address being rate-limited, not the browser — so the row is parked
@@ -276,7 +279,9 @@ build.spec, build.bat   PyInstaller packaging
 - **Concurrent Chrome windows** — how many accounts run at once (default 1).
 - **Launch jitter** — random delay before each account starts (desyncs a shared IP).
 - **Headless** — hide Chrome (not recommended; you can't help with challenges).
-- **Retries per account on block** — how many cookie-wipe + cooldown retries before failing.
+- **Retries per account on block** — how many cookie-wipe + cooldown retries before failing
+  (3, waiting 5m, 20m, 1h10m). The wait ladder lives in the code rather than in the saved
+  settings, so a new build changes it on every machine instead of only new installs.
 - **Jivetel** — portal login used to read SMS codes by phone number.
 - **Google Sheet** — which office sheet finished work is copied into, when it last synced,
   plus **Sync now** and **Test connection**.
