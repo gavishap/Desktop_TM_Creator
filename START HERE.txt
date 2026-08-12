@@ -1,0 +1,107 @@
+TICKETMASTER ACCOUNT CREATOR — HOW TO USE IT
+============================================
+
+FIRST TIME
+----------
+1. Unzip this folder anywhere (Desktop is fine). Keep it all together.
+   Unzip it properly — don't run the exe from inside the zip preview window.
+2. Make sure Google Chrome is installed. That's the only requirement.
+3. Open the "TM Desktop" folder and double-click "TM Desktop.exe".
+   Windows may warn about an unknown publisher: click More info > Run anyway.
+4. It asks "Which team is this computer for?" — pick yours from the list.
+   Everything else (email logins, Apple ID, Jivetel) loads by itself.
+
+You only do step 4 once. After that it opens straight to your accounts.
+
+
+THE FIVE BUTTONS YOU'LL USE MOST
+--------------------------------
+Start          run every pending account
+Stop           finish the current one and stop
+Run selected   tick some rows, run only those
+Reset failed   put all failed rows back in the queue
++ Add          paste accounts in by hand (email, phone) one per line
+
+On each row: play = run this one, circle arrow = try again, X = delete.
+Click the small copy icon next to an email or password to copy it.
+
+
+THE FOUR SCREENS (tabs across the top)
+--------------------------------------
+ACCOUNTS
+  Your list and results. Each finished row shows the name, address, ZIP and
+  the Ticketmaster password that was created.
+
+iCLOUD EMAILS
+  Makes new @icloud.com "Hide My Email" addresses from your Apple ID.
+  Type how many, click Generate. They drop straight into Accounts, ready to run.
+  If Apple asks for a code, a box appears — type the code from your Apple device.
+
+GMAIL EMAILS
+  Makes new addresses out of a Gmail you already own by adding a dot
+  (john@gmail.com becomes j.ohn@gmail.com). Mail still arrives in the same inbox.
+  Step 1: tick the base Gmails you want this batch made from. Add new ones in
+  the box first if you need to. Only the ticked ones get used.
+  Step 2: type how many you want and click Generate.
+  Each base shows how many fresh variations it still has left.
+
+PHONE NUMBERS
+  Paste in the numbers you have. The app hands out an unused one to each new
+  account automatically and marks it used.
+
+
+WHILE IT'S RUNNING
+------------------
+A Chrome window opens and does the signup on its own. Leave it alone.
+Email and text codes are fetched automatically. If one can't be read, a box
+appears asking you to type it in.
+
+The line at the bottom of the window says what's happening.
+Click "Activity" for the full log.
+
+
+IF SOMETHING GETS BLOCKED
+-------------------------
+You don't have to do anything. The app handles it:
+  - Blocked      clears the browser and tries again, up to 3 tries.
+  - "Waiting"    Ticketmaster is limiting your internet connection. The row
+                 shows a countdown and comes back on its own (30 min, then 1
+                 hour, then 2). If several in a row get hit, everything pauses
+                 for half an hour so your connection isn't flagged.
+
+Don't restart these by hand — waiting is what makes them work.
+
+
+A FEW RULES
+-----------
+- Keep the app open while it runs. Closing it stops everything (nothing is lost;
+  unfinished rows go back in the queue next time you open it).
+- Running 2 or 3 at once is fine. More than that on one internet connection
+  gets you blocked. Change it under the gear icon > Concurrent Chrome windows.
+- If several people in one office run this at the same time, leave "Launch
+  jitter" switched on. It staggers the starts so you don't all look identical.
+
+
+YOUR GOOGLE SHEET
+-----------------
+You don't have to copy anything over by hand. On its own, every minute or two:
+  - accounts that finish are added to the TM Accounts tab of your sheet, in the
+    next free row, with the password and everything else, coloured green.
+  - every iCloud address the app makes is added to the pool_emails tab.
+
+Accounts still waiting are kept in the app only, on purpose. Nothing is ever
+read back from the sheet, so editing the sheet won't change the app.
+Gear icon > Google Sheet shows when it last synced, with a "Sync now" button.
+
+
+MOVING TO ANOTHER COMPUTER
+--------------------------
+Your finished accounts are saved back into this folder automatically.
+Zip the whole folder, open it on the other computer, and everything is there.
+Don't run two computers off the same folder on a shared drive at once.
+
+
+WHERE THINGS ARE SAVED
+----------------------
+Accounts, logs and screenshots live on your own PC, nowhere else.
+"Export CSV" gives you a spreadsheet you can open in Excel.

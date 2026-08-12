@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TM Desktop</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="logo">TM</span>
+      <div>
+        <h1>Account Creator</h1>
+        <p class="sub">Runs locally on your Chrome · no proxies · finished accounts copied to your sheet</p>
+      </div>
+    </div>
+    <div class="run-controls">
+      <div id="counts" class="counts"></div>
+      <button id="btnStart" class="btn primary">Start</button>
+      <button id="btnStop" class="btn danger" disabled>Stop</button>
+      <button id="btnLogs" class="btn ghost" title="Show or hide the activity log">
+        <span id="runDot" class="dot idle"></span> Activity</button>
+      <button id="btnSettings" class="btn ghost" title="Settings">⚙</button>
+    </div>
+  </header>
+
+  <nav class="nav">
+    <button class="navbtn active" data-view="accounts">Accounts</button>
+    <button class="navbtn" data-view="icloud">iCloud Emails</button>
+    <button class="navbtn" data-view="gmail">Gmail Emails</button>
+    <button class="navbtn" data-view="numbers">Phone Numbers</button>
+  </nav>
+
+  <main class="layout">
+    <div class="views">
+
+      <!-- ── Accounts ─────────────────────────────────────────────────────── -->
+      <section id="viewAccounts" class="panel view">
+        <div class="panel-head">
+          <h2>Accounts</h2>
+          <div class="head-actions">
+            <button id="btnRunSel" class="btn small primary" disabled>Run selected</button>
+            <button id="btnResetFailed" class="btn small ghost">Reset failed</button>
+            <button id="btnExport" class="btn small ghost">Export CSV</button>
+            <button id="btnAddToggle" class="btn small">+ Add</button>
+          </div>
+        </div>
+
+        <div id="addBox" class="add-box hidden">
+          <textarea id="addText" placeholder="One per line:  email, phone, gmail_app_password
+alias1@icloud.com, 4075551234, abcd efgh ijkl mnop
+alias2@icloud.com, 3125559876
+# gmail app password is optional — leave it out to type the email code by hand"></textarea>
+          <div class="add-actions">
+            <button id="btnAdd" class="btn primary small">Add accounts</button>
+            <span class="hint">Comma or tab separated. Phone is the number that will receive the SMS.</span>
+          </div>
+        </div>
+
+        <div class="table-wrap">
+          <table id="acctTable">
+            <thead>
+              <tr>
+                <th class="c"><input type="checkbox" id="selAll" title="Select all" /></th>
+                <th>#</th><th>Email</th><th>Phone</th><th>Name</th><th>Address</th><th>ZIP</th>
+                <th>Password</th><th>Status</th>
+                <th class="c">Email</th><th class="c">Phone</th><th>Date</th><th>Note</th><th></th>
+              </tr>
+            </thead>
+            <tbody id="acctBody"></tbody>
+          </table>
+          <div id="emptyState" class="empty">No accounts yet. Click <b>+ Add</b> to paste your list.</div>
+        </div>
+      </section>
+
+      <!-- ── iCloud emails ────────────────────────────────────────────────── -->
+      <section id="viewIcloud" class="panel view hidden">
+        <div class="panel-head">
+          <h2>iCloud Emails</h2>
+          <div class="head-actions">
+            <button id="fcMove" class="btn small ghost" disabled>Add selected to Accounts</button>
+          </div>
+        </div>
+        <div class="panel-body col">
+          <p class="hint mb">Mints <b>Hide My Email</b> aliases from your Apple ID (needs iCloud+).
+            Each one is added to Accounts straight away with a name, address and a phone
+            number from the pool, so it is ready to run. The pool below is the record of
+            what was made and which addresses ended up as verified accounts.</p>
+
+          <div class="section-label">Apple ID</div>
+          <div id="icloudList" class="chip-list"></div>
+          <div class="field-row">
+            <input id="fcAppleId" type="text" placeholder="you@icloud.com" />
+            <input id="fcApplePw" type="password" placeholder="Apple ID password" />
+            <button id="fcSaveApple" class="btn small primary">Save</button>
+          </div>
+          <p class="hint mb">Use the <b>normal Apple ID password</b> you sign in to
+            icloud.com with. App-specific passwords do not work here — those are only for
+            mail apps, and this app never reads iCloud mailboxes.</p>
+          <p class="hint mb">The password stays on this computer. When Apple asks for a code,
+            a box pops up — type the code from your Apple device.</p>
+
+          <div class="section-label">Generate</div>
+          <div class="field-row">
+            <input id="fcCount" type="number" min="1" max="200" value="5" />
+            <select id="fcAppleUse" title="Which Apple ID to mint on"></select>
+            <label class="inline"><input id="fcReset" type="checkbox" /> fresh login</label>
+            <button id="fcGenerate" class="btn small primary">Generate</button>
+            <button id="fcCancel" class="btn small danger hidden">Stop</button>
+          </div>
+          <div id="fcProgress" class="fc-progress">Pool: <b id="fcUnused">0</b> emails.</div>
+
+          <div class="section-label">Pool</div>
+          <div class="table-wrap grow">
+            <table id="poolTable">
+              <thead>
+                <tr><th class="c"><input type="checkbox" id="poolSelAll" /></th>
+                  <th>Email</th><th>From</th><th>State</th><th></th></tr>
+              </thead>
+              <tbody id="poolBody"></tbody>
+            </table>
+            <div id="poolEmpty" class="empty">No emails yet. Set an Apple ID and click Generate.</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── Gmail emails ─────────────────────────────────────────────────── -->
+      <section id="viewGmail" class="panel view hidden">
+        <div class="panel-head"><h2>Gmail Emails</h2></div>
+        <div class="panel-body col">
+          <p class="hint mb">Makes brand-new addresses by inserting a period into one of your base
+            Gmails (Gmail ignores dots, so mail still arrives in the same inbox). It remembers every
+            variation it has already used and only makes fresh ones. Each gets a name, and a phone
+            number is pulled from the pool automatically if one is free.</p>
+
+          <div class="section-label">Step 1 — pick the bases to generate from
+            <span id="gmSummary" class="label-note"></span></div>
+          <div class="field-row">
+            <input id="gmBase" type="text" placeholder="add base Gmail(s), comma or space separated" />
+            <button id="gmAddBase" class="btn small">Add bases</button>
+            <button id="gmAll" class="btn small ghost">Tick all</button>
+            <button id="gmNone" class="btn small ghost">Untick all</button>
+          </div>
+          <div id="basesList" class="bases-list grow"></div>
+
+          <div class="section-label">Step 2 — how many</div>
+          <div class="field-row">
+            <input id="gmCount" type="number" min="1" max="500" value="10" />
+            <button id="gmGenerate" class="btn small primary">Generate period emails</button>
+          </div>
+          <p id="gmMsg" class="hint mb"></p>
+        </div>
+      </section>
+
+      <!-- ── Phone numbers ────────────────────────────────────────────────── -->
+      <section id="viewNumbers" class="panel view hidden">
+        <div class="panel-head">
+          <h2>Phone Numbers</h2>
+          <div class="head-actions">
+            <span class="hint"><b id="numUnused">0</b> unused</span>
+            <button id="numAssign" class="btn small ghost">Assign to email rows</button>
+          </div>
+        </div>
+        <div class="panel-body col">
+          <p class="hint mb">Paste the phone numbers you have. When you generate emails — or run a
+            row that's missing a number — the app takes the next unused number automatically, attaches
+            it to the row, and marks it used.</p>
+          <div class="field-row">
+            <input id="numInput" type="text" placeholder="4075551234, 3125559876, ..." />
+            <button id="numAdd" class="btn small primary">Add numbers</button>
+          </div>
+          <div class="table-wrap grow">
+            <table id="numTable">
+              <thead><tr><th>Phone</th><th class="c">Used</th><th>Account</th><th></th></tr></thead>
+              <tbody id="numBody"></tbody>
+            </table>
+            <div id="numEmpty" class="empty">No numbers yet.</div>
+          </div>
+        </div>
+      </section>
+
+    </div>
+
+    <section id="logsPanel" class="panel logs">
+      <div class="panel-head"><h2>Activity</h2>
+        <button id="logsClose" class="icon-btn" title="Hide the activity log">✕</button></div>
+      <div id="logBox" class="log-box"></div>
+    </section>
+  </main>
+
+  <!-- Always-visible one-liner, so hiding the log never hides what's happening. -->
+  <footer id="statusBar" class="statusbar" title="Click to open the activity log">
+    <span id="statusMsg" class="status-msg">Ready.</span>
+  </footer>
+
+  <!-- First run: which team's logins should this copy use? -->
+  <div id="teamOverlay" class="overlay hidden">
+    <div class="modal wide">
+      <h3>Which team is this computer for?</h3>
+      <p class="prompt-label">This folder holds logins for more than one team. Pick yours and
+        the app will load its email inboxes, Apple IDs and Jivetel login. You can change it
+        later in Settings.</p>
+      <div id="teamList" class="bases-list"></div>
+    </div>
+  </div>
+
+  <!-- Code prompt modal -->
+  <div id="promptOverlay" class="overlay hidden">
+    <div class="modal">
+      <h3 id="promptTitle">Enter verification code</h3>
+      <p id="promptLabel" class="prompt-label"></p>
+      <input id="promptInput" type="text" inputmode="numeric" maxlength="8" placeholder="6-digit code" />
+      <div class="modal-actions">
+        <button id="promptCancel" class="btn ghost">Skip</button>
+        <button id="promptSubmit" class="btn primary">Submit</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Settings drawer -->
+  <div id="settingsOverlay" class="overlay hidden">
+    <div class="modal wide">
+      <h3>Settings</h3>
+
+      <div class="section-label">Credentials file</div>
+      <p class="hint mb">Your team's logins live in the project folder this app was shipped
+        in. Pick your team's file to load the email inboxes, Apple IDs and Jivetel login in
+        one go.</p>
+      <div class="field-row">
+        <select id="setCredFile"></select>
+        <button id="setCredLoad" class="btn">Load</button>
+      </div>
+
+      <div class="section-label">Google Sheet</div>
+      <p class="hint mb">Accounts that finish, and every iCloud alias made here, are copied
+        into your team's sheet on their own — verified rows onto the accounts tab, aliases
+        onto <b>pool_emails</b>. It happens in the background every minute or two; nothing
+        is ever read back from the sheet, and rows still waiting are left out on purpose.</p>
+      <p id="setSheetState" class="hint mb"></p>
+      <div class="field-row">
+        <button id="setSheetSync" class="btn">Sync now</button>
+        <button id="setSheetTest" class="btn ghost">Test connection</button>
+      </div>
+      <p id="setSheetMsg" class="hint mb"></p>
+
+      <div class="section-label">Email inboxes</div>
+      <p class="hint mb">The Gmail accounts the verification codes arrive in — either the
+        account itself or the inbox its iCloud alias forwards to. Use a Gmail
+        <b>app password</b>, not the normal one. iCloud mailboxes can't be read.</p>
+      <div id="setInboxList" class="bases-list mb"></div>
+      <div class="field-row">
+        <input id="setInboxUser" type="text" placeholder="inbox@gmail.com" />
+        <input id="setInboxPass" type="password" placeholder="app password" />
+        <button id="setInboxAdd" class="btn">Add</button>
+        <button id="setInboxTest" class="btn ghost">Test all</button>
+      </div>
+
+      <div class="section-label">SMS (Jivetel)</div>
+      <p class="hint mb">Enter your Jivetel portal login. The app logs in and reads the
+        Ticketmaster SMS code by phone number. Leave blank to type SMS codes by hand.</p>
+      <label class="field">
+        <span>Jivetel username / email</span>
+        <input id="setJvUser" type="text" placeholder="you@example.com" />
+      </label>
+      <label class="field">
+        <span>Jivetel password</span>
+        <input id="setJvPass" type="password" placeholder="••••••••" />
+      </label>
+
+      <div class="section-label">Run</div>
+      <label class="field">
+        <span>Concurrent Chrome windows</span>
+        <input id="setConcurrent" type="number" min="1" max="5" />
+      </label>
+      <label class="field">
+        <span>Launch jitter (seconds) — random delay before each account. Keep &gt; 0 when
+          multiple computers share one internet connection.</span>
+        <input id="setJitter" type="number" min="0" max="60" />
+      </label>
+      <label class="field">
+        <span>Retries per account on block</span>
+        <input id="setRetries" type="number" min="0" max="5" />
+      </label>
+      <label class="field row">
+        <input id="setHeadless" type="checkbox" />
+        <span>Run Chrome hidden (headless) — not recommended, you can't help with challenges</span>
+      </label>
+
+      <div class="modal-actions">
+        <button id="setCancel" class="btn ghost">Close</button>
+        <button id="setSave" class="btn primary">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

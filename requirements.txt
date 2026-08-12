@@ -1,0 +1,13 @@
+# TM Desktop — self-contained account creator (runs on the operator's own PC + Chrome)
+playwright>=1.48,<1.61
+pywebview>=5.1
+beautifulsoup4>=4.12
+phonenumbers>=8.13
+zipcodes>=1.2
+icloud-hme>=1.0.0
+pyyaml>=6.0
+gspread>=6.1
+google-auth>=2.30
+
+# Packaging (build the .exe)
+pyinstaller>=6.10

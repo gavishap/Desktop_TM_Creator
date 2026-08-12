@@ -1,0 +1,12 @@
+venv/
+build/
+dist/
+__pycache__/
+*.pyc
+*.spec.bak
+/_*.py
+
+# Credentials and account history never live in the repo. They are handed over as a
+# config/ folder (settings*.yaml, service_account.json, the *.csv history) and the app
+# picks them up from there — see the README.
+config/
